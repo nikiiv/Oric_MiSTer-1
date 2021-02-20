@@ -193,6 +193,8 @@ assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 `include "build_id.v"
 localparam CONF_STR = {
 	"Oric;;",
+	"F1,TAP,Load TAP;",
+	"-;",
 	"S0,DSK,Mount Drive A:;",
 	"-;",
 	"R1, Stop CPU 01;",

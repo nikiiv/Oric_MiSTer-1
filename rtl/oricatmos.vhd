@@ -112,6 +112,7 @@ architecture RTL of oricatmos is
 
     -- cpu
     signal cpu_ad             : std_logic_vector(23 downto 0);
+	 signal cpu_ad_c            : std_logic_vector(23 downto 0);
     signal cpu_di             : std_logic_vector(7 downto 0);
     signal cpu_do             : std_logic_vector(7 downto 0);
     signal cpu_rw             : std_logic;
@@ -285,36 +286,30 @@ tape_loader : entity work.tape_loader
 
 	cpu_really_stopped <= not cpu_rdy_signal and cpu_stopped;
 	ula_phi2_2 <= ula_phi2;
-
---ram_ad  <= ula_AD_SRAM when (ula_PHI2 = '0')else cpu_ad(15 downto 0);
---ram_ad  <= ula_AD_SRAM when (ula_PHI2 = '0')else cpu_ad(15 downto 0);
-process (cpu_really_stopped, ula_phi2)
-begin
---	wait until rising_edge(clk_in);
-
+	cpu_ad_c(15 downto 0) <= cpu_ad(15 downto 0) when cpu_really_stopped = '0' else tap_loader_address (15 downto 0);
+	ram_ad  <= ula_AD_SRAM when (ula_PHI2 = '0') else cpu_ad_c(15 downto 0);
+	cpu_rw <= cpu_rw_c when cpu_really_stopped = '0' else '0';
+	ram_d <= cpu_do when  cpu_really_stopped = '0' else tap_loader_data;
 	
-	if (cpu_really_stopped = '1') then 
-		if (ula_phi2 = '0') then 
-			ram_ad  <= ula_AD_SRAM;
-			ram_d   <= cpu_do;
-			cpu_rw <= cpu_rw_c;
-		else
-			ram_ad <= tap_loader_address;
-			ram_d	 <= tap_loader_data;	
-			cpu_rw <= '0';
-		end if;	
-
-	else 
-		ram_d   <= cpu_do;
-		cpu_rw <= cpu_rw_c;
-		if (ula_phi2 = '0') then
-			ram_ad  <= ula_AD_SRAM;
-		else
-			ram_ad  <= cpu_ad(15 downto 0);
-		end if;
 	
-	end if;
-end process;	
+	
+--	process (PH2_2, cpu_really_stopped)
+--begin
+----	wait until rising_edge(clk_in);
+--	if (rising_edge(PH2_2)) then
+--	
+--		if (cpu_really_stopped = '1') then 
+--				ram_ad <= tap_loader_address;
+--				ram_d	 <= tap_loader_data;	
+--				cpu_rw <= '0';
+--			else
+--				ram_ad  <= ula_AD_SRAM;
+--				ram_d   <= cpu_do;
+--				cpu_rw <= cpu_rw_c;
+--
+--		end if;	
+--	end if;	
+--end process;	
 
 
 
@@ -363,7 +358,7 @@ inst_ula : entity work.ULA
       RESETn     	=> pll_locked, --RESETn,
 		MAPn      	=> cont_MAPn,
       DB         	=> SRAM_DO,
-      ADDR       	=> cpu_ad(15 downto 0),
+      ADDR       	=> cpu_ad_c(15 downto 0),
       SRAM_AD    	=> ula_AD_SRAM,
 		SRAM_OE    	=> ula_OE_SRAM,
 		SRAM_CE    	=> ula_CE_SRAM,
