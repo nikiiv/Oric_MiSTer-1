@@ -37,3 +37,7 @@ c5_pin_model_dump.txt
 *.xml
 *_netlist
 *.cdf
+oric_sim.cr.mti
+oric_sim.mpf
+work/
+vsim.wlf

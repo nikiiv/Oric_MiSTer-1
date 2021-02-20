@@ -27,8 +27,10 @@
 `ifndef USE_DDRAM
 	`ifdef USE_FB
 		`define USE_DDRAM
-	`endif
+	`endifH
 `endif
+
+`define DEBUG_NOHDMI
 
 
 module sys_top

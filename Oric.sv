@@ -186,6 +186,7 @@ assign AUDIO_MIX = 0;
 
 wire [1:0] ar = status[14:13];
 
+
 assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
 assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 
@@ -193,6 +194,9 @@ assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 localparam CONF_STR = {
 	"Oric;;",
 	"S0,DSK,Mount Drive A:;",
+	"-;",
+	"R1, Stop CPU 01;",
+	"R2, Start CPU;",
 	"-;",
 	"O3,ROM,Oric Atmos,Oric 1;",
 	"O56,FDD Controller,Auto,Off,On;",
@@ -237,6 +241,8 @@ always @(posedge clk_sys) begin
 end
 
 ///////////////////////////////////////////////////
+
+
 
 wire [10:0] ps2_key;
 
@@ -382,7 +388,10 @@ oricatmos oricatmos
 	.sd_dout          (sd_buff_dout),
 	.sd_din           (sd_buff_din),
 	.sd_dout_strobe   (sd_buff_wr),
-	.sd_din_strobe    (0)
+	.sd_din_strobe    (0),
+	.stop_cpu_signal	(status[1]),
+	.start_cpu_signal	(status[2])
+	
 );
 
 reg fdd_ready = 0;

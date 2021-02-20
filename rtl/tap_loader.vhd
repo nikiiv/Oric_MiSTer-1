@@ -13,14 +13,14 @@ port (
 	stop_cpu		: in 	std_logic;
 	start_cpu	: in 	std_logic;
 	cpu_rdy		: out	std_logic;
-	nRes			: in		std_logic
---	cpu_stopped : out std_logic
+	nRes			: in		std_logic;
+	cpu_stopped : out std_logic
 	);
 end;
 
 architecture RTL of tape_loader is
 
-	signal cpu_stopped : std_logic := '0';
+	--signal cpu_stopped : std_logic := '0';
 	signal start_cpu_stopping : std_logic := '0';
 	
 
@@ -34,6 +34,7 @@ begin
 		if (nRes = '0') then
 			cpu_rdy <= '1';
 			start_cpu_stopping <= '0';
+			--cpu_stopped <= '0';
 			--we_are_stopping := '0';
 			
 		elsif (rising_edge(CLK_PHI)) then

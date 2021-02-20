@@ -28,8 +28,8 @@ begin
 		nRes			=> reset,
 		stop_cpu 	=> stop_cpu_signal,
 		start_cpu 	=> start_cpu_signal,
-		cpu_rdy		=> cpu_rdy_signal
-		--cpu_stopped => cpu_stopped
+		cpu_rdy		=> cpu_rdy_signal,
+		cpu_stopped => cpu_stopped
 		);
 
 		

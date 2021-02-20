@@ -95,7 +95,10 @@ entity oricatmos is
 	 sd_dout:         in std_logic_vector (7 downto 0);
 	 sd_din:          out std_logic_vector (7 downto 0);
 	 sd_dout_strobe:  in std_logic;
-	 sd_din_strobe:   in std_logic
+	 sd_din_strobe:   in std_logic;
+	 stop_cpu_signal:	in	std_logic;
+	 start_cpu_signal:	in	std_logic
+	 
 	 );
 end;
 
@@ -112,6 +115,7 @@ architecture RTL of oricatmos is
     signal cpu_di             : std_logic_vector(7 downto 0);
     signal cpu_do             : std_logic_vector(7 downto 0);
     signal cpu_rw             : std_logic;
+	 signal cpu_rw_c           : std_logic;
     signal cpu_irq            : std_logic;
       
 	 -- VIA
@@ -195,6 +199,13 @@ architecture RTL of oricatmos is
     signal PH2_old            : std_logic_vector(3 downto 0);   
     signal PH2_cntr           : std_logic_vector(4 downto 0);
 	 
+	 --tape loader
+	 signal cpu_rdy_signal : std_logic := '1';
+	 signal cpu_stopped : std_logic := '0';
+	 signal cpu_really_stopped :std_logic := '0';
+	 signal tap_loader_data : std_logic_vector(7 downto 0) 		:= X"4E";
+	 signal tap_loader_address : std_logic_vector(15 downto 0)  := X"BB80";
+	 signal ula_phi2_2	: std_logic;
 	 
 	 
 	 
@@ -249,23 +260,68 @@ inst_cpu : entity work.T65
       Res_n   		=> cont_RESETn,
       Enable  		=> ENA_1MHZ,
       Clk     		=> CLK_IN,
-      Rdy     		=> '1',
+      Rdy     		=> cpu_rdy_signal,
       Abort_n 		=> '1',
       IRQ_n   		=> cpu_irq and cont_irq, -- Via and disk controller
       NMI_n   		=> KEYB_NMIn,
       SO_n    		=> '1',
-      R_W_n   		=> cpu_rw,
+      R_W_n   		=> cpu_rw_c,
       A       		=> cpu_ad,
       DI      		=> cpu_di,
       DO      		=> cpu_do
 );
 
+tape_loader : entity work.tape_loader 
+	port map (
+--		CLK_PHI  	=> CLK_IN,
+		CLK_PHI  	=> PH2_2,
+		nRes			=> RESETn,
+		stop_cpu 	=> stop_cpu_signal,
+		start_cpu 	=> start_cpu_signal,
+		cpu_rdy		=> cpu_rdy_signal, 
+		cpu_stopped	=> cpu_stopped
+	);
+	
+
+	cpu_really_stopped <= not cpu_rdy_signal and cpu_stopped;
+	ula_phi2_2 <= ula_phi2;
 
 --ram_ad  <= ula_AD_SRAM when (ula_PHI2 = '0')else cpu_ad(15 downto 0);
-ram_ad  <= ula_AD_SRAM when (ula_PHI2 = '0')else cpu_ad(15 downto 0);
+--ram_ad  <= ula_AD_SRAM when (ula_PHI2 = '0')else cpu_ad(15 downto 0);
+process (cpu_really_stopped, ula_phi2)
+begin
+--	wait until rising_edge(clk_in);
+
+	
+	if (cpu_really_stopped = '1') then 
+		if (ula_phi2 = '0') then 
+			ram_ad  <= ula_AD_SRAM;
+			ram_d   <= cpu_do;
+			cpu_rw <= cpu_rw_c;
+		else
+			ram_ad <= tap_loader_address;
+			ram_d	 <= tap_loader_data;	
+			cpu_rw <= '0';
+		end if;	
+
+	else 
+		ram_d   <= cpu_do;
+		cpu_rw <= cpu_rw_c;
+		if (ula_phi2 = '0') then
+			ram_ad  <= ula_AD_SRAM;
+		else
+			ram_ad  <= cpu_ad(15 downto 0);
+		end if;
+	
+	end if;
+end process;	
 
 
-ram_d   <= cpu_do;
+
+
+
+
+
 SRAM_DO <= ram_q;
 ram_cs  <= '0' when RESETn = '0' else ula_CE_SRAM;
 ram_oe  <= '0' when RESETn = '0' else ula_OE_SRAM;
@@ -474,6 +530,9 @@ K7_REMOTE   <= via_pb_out(6);
 PRN_STROBE  <= via_pb_out(4);
 PRN_DATA    <= via_pa_out;
 
+PH2_2 		<= CLK_IN;
+--PH2_2			<= '0';
+
 
 --joya <= joystick_0(6 downto 4) & joystick_0(0) & joystick_0(1) & joystick_0(2) & joystick_0(3);
 --joyb <= joystick_1(6 downto 4) & joystick_1(0) & joystick_1(1) & joystick_1(2) & joystick_1(3);
@@ -482,7 +541,7 @@ PRN_DATA    <= via_pa_out;
 process begin
 	wait until rising_edge(clk_in);
   
-	 
+	 --fd_led <= cpu_rdy_signal;
 	 
 		-- expansion port
       if    cpu_rw = '1' and ula_PHI2 = '1' and ula_CSIOn = '0' and cont_IOCONTROLn = '0' then
